@@ -1,0 +1,20 @@
+Screen {
+    background: #121212;
+    color: #ffffff;
+}
+
+Header {
+    background: #1e1e1e;
+    color: #00ff00;
+    height: 3;
+    content-align: center middle;
+    border-bottom: heavy #333333;
+}
+
+Footer {
+    background: #1e1e1e;
+    color: #00ff00;
+    height: 3;
+    content-align: center middle;
+    border-top: heavy #333333;
+}
