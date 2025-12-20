@@ -89,3 +89,10 @@ class Vault:
         service = service.strip().lower()
         data = self._read()
         return data.get("entries", {}).get(service)
+    
+    def list_services(self) -> list[str]:
+        data=self._read()
+        return sorted(list(data.get("entries", {}).keys()))
+
+    def verify_master(self) -> None:
+        _ = self._read()
