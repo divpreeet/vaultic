@@ -23,7 +23,7 @@ def download(url, path):
         response = requests.get(url)
         response.raise_for_status()
         image = Image.open(BytesIO(response.content))
-        image.save(path)
+        image.save(path, format="PNG")
         return path
 
     except Exception as e:

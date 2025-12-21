@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from stego import extract, embed
 
 @dataclass
 class VaultPaths:
@@ -17,7 +18,7 @@ def default() -> VaultPaths:
     base = Path.home() / ".vaultic"
     return VaultPaths(
         dir=base,
-        vault_file=base / "vault.bin",
+        vault_file=base / "vault.png",
         salt_file=base / "salt.bin",
     )
 
@@ -68,15 +69,28 @@ class Vault:
         salt = load_salt(self.paths.salt_file)
         self.key = derive_key(master_key, salt)
 
+    def create_meme(self, cover_path: str | Path):
+        if self.paths.vault_file.exists():
+            raise FileExistsError(f"vault already exists at {self.paths.vault_file}, to overwrite this vault, manually delete the image at the provided path")
+        data = {"entries": {}}
+        blob = encrypt_json(data, self.key)
+        embed(cover_path, blob, self.paths.vault_file)
+
     def _read(self) -> Dict:
         if not self.paths.vault_file.exists():
-            return {"entries": {}}
-        blob = self.paths.vault_file.read_bytes()
+            raise FileNotFoundError("vailt.png was not found")
+        blob = extract(self.paths.vault_file)
+        if blob is None:
+            raise ValueError("vault.png has no embedded vault data")
+       
         return decrypt_json(blob, self.key)
-
+    
     def _write(self, data: Dict) -> None:
+        if not self.paths.vault_file.exists():
+            raise FileNotFoundError("vault.png not found")
+
         blob = encrypt_json(data, self.key)
-        self.paths.vault_file.write_bytes(blob)
+        embed(self.paths.vault_file, blob, self.paths.vault_file)
 
     def add_entry(self, service: str, password: str) -> None:
         service = service.strip().lower()
