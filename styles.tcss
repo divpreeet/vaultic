@@ -18,3 +18,45 @@ Footer {
     content-align: center middle;
     border-top: heavy #333333;
 }
+
+#layout {
+    height: 100%;
+}
+
+#panel {
+    width: 1fr;
+    height: 100%;
+    padding: 1;
+}
+
+#meme {
+    width: 52;
+    height: 100%;
+    padding: 0;
+}
+
+#meme-title {
+    height: 1;
+    padding: 0 1;
+}
+
+#meme-view {
+    height: 1fr;
+    width: 100%;
+    content-align: center middle;
+}
+
+#topbar {
+    height: 1;
+    padding: 0 1;
+}
+
+#title {
+    width: 1fr;
+    content-align: left middle;
+}
+
+#topbar #meme-title {
+    width: 52;
+    content-align: center middle;
+}

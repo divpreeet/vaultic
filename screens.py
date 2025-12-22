@@ -1,4 +1,4 @@
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, Horizontal
 from textual.widgets import Static, Input, Button, ListView, ListItem
 from textual.screen import Screen
 from cryptography.exceptions import InvalidTag
@@ -6,6 +6,8 @@ from vault import Vault
 from meme import meme as meme_url, download
 from pathlib import Path
 from vault import default
+from rich_pixels import Pixels
+from PIL import Image
 
 class HomeScreen(Screen):
     def __init__(self) -> None:
@@ -13,24 +15,72 @@ class HomeScreen(Screen):
         self.unlocked = False
 
     def compose(self):
-        with Container(id="panel"):
-            yield Static("Vaultic", id="title")
-            yield Static("enter your master password to continue", id="subtitle")
-            yield Input(placeholder="master password", password=True, id="master")
 
-            with Vertical(id="menu-buttons"):
-                yield Button("create vault meme", id="create-vault", classes="buttons")
-                yield Button("unlock", id="unlock", classes="buttons")
-                yield Button("store a password", id="go-store", classes="buttons", disabled=True)
-                yield Button("retrieve a password", id="go-get", classes="buttons", disabled=True)
+        with Vertical(id="root"):
+            with Horizontal(id="topbar"):
+                yield Static("Vaultic", id="title")
+                yield Static("meme preview", id="meme-title")
 
-            yield Static("", id="status", classes="box")
+            with Horizontal(id="layout"):
+                with Container(id="panel"):
+                    yield Static("enter your master password to continue", id="subtitle")
+                    yield Input(placeholder="master password", password=True, id="master")
+
+                    with Vertical(id="menu-buttons"):
+                        yield Button("create vault meme", id="create-vault", classes="buttons")
+                        yield Button("unlock", id="unlock", classes="buttons")
+                        yield Button("store a password", id="go-store", classes="buttons", disabled=True)
+                        yield Button("retrieve a password", id="go-get", classes="buttons", disabled=True)
+                    
+                    yield Static("", id="status", classes="box")
+                
+                with Container(id="meme"):
+                    yield Static("", id="meme-view")
+                
 
     def on_mount(self):
         exists = default().vault_file.exists()
         self.query_one("#create-vault", Button).disabled = exists
         if exists:
             self.query_one("#status", Static).update("vault exists, enter your master password and click unlock")
+        else:
+            self.query_one("#status", Static).update("no vault meme found, create one!")
+        self.update_preview()
+
+    def center_square(self, img: Image.Image) -> Image.Image:
+        w, h = img.size
+        side = min(w, h)
+        left = (w - side) // 2
+        top = (h - side) // 2
+        return img.crop((left, top, left + side, top + side))
+
+    def update_preview(self):
+        vault_path = default().vault_file
+        meme_view = self.query_one("#meme-view", Static)
+
+        if not vault_path.exists():
+            meme_view.update("no vault meme yet, create one!")
+            return
+        
+        try:
+            w = max(10, meme_view.size.width)
+            h = max(10, meme_view.size.height)            
+
+            # margin so no clip
+            w -= 1
+            h -= 1
+
+            side = max(10, min(w, h))
+
+            img = Image.open(vault_path).convert("RGB")
+            img = self.center_square(img)
+            meme_view.update(Pixels.from_image(img, resize=(side, side)))
+        except Exception as e:
+            print(e)
+            meme_view.update(str(e))
+
+    def on_resize(self):
+        self.update_preview()
 
 
     def _set_unlocked(self, unlocked: bool) -> None:
@@ -61,6 +111,8 @@ class HomeScreen(Screen):
                 v.create_meme(cover_path)
                 self._set_unlocked(False)
                 self.query_one("#status", Static).update("vault meme created at ~/.vaultic/vault.png")
+                self.query_one("#create-vault", Button).disabled = True
+                self.update_preview()
             except Exception as e:
                 self.query_one("#status", Static).update(str(e))
             return
@@ -156,6 +208,9 @@ class GetScreen(Screen):
 
             yield Button("back", id="back", classes="buttons")
             yield Static("", id="status", classes="box")
+    
+    def on_mount(self):
+        self.refresh_services()
 
     def refresh_services(self) -> None:
         list_view = self.query_one("#services", ListView)
