@@ -8,6 +8,9 @@ from pathlib import Path
 from vault import default
 from rich_pixels import Pixels
 from PIL import Image
+import secrets 
+import string
+import pyperclip
 
 class HomeScreen(Screen):
     def __init__(self) -> None:
@@ -19,7 +22,7 @@ class HomeScreen(Screen):
         with Vertical(id="root"):
             with Horizontal(id="topbar"):
                 yield Static("Vaultic", id="title")
-                yield Static("meme preview", id="meme-title")
+                yield Static("Preview", id="meme-title")
 
             with Horizontal(id="layout"):
                 with Container(id="panel"):
@@ -153,14 +156,66 @@ class StoreScreen(Screen):
         with Container(id="panel"):
             yield Static("store password", id="title")
             yield Input(placeholder="service (eg: gmail)", id="service")
-            yield Input(placeholder="password", password=True, id="password")
+
+            with Horizontal(id="row"):
+                yield Input(value="16", placeholder="length", id="pw_len")
+                yield Button("generate", id="generate", classes="buttons")
+
+            with Horizontal(id="pw-row"):
+                yield Input(placeholder="password", password=True, id="password")
+                yield Button("copy", id="copy-store", classes="buttons")
+
             yield Button("save", id="save", classes="buttons")
             yield Button("back", id="back", classes="buttons")
             yield Static("", id="status", classes="box")
 
+    def gen_pwd(self, length: int) -> str:
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*()-_=+[]{};:,.?/"
+        length = max(8, min(length, 64))
+
+        picks = [
+            secrets.choice(string.ascii_lowercase),
+            secrets.choice(string.ascii_uppercase),
+            secrets.choice(string.digits),
+            secrets.choice("!@#$%^&*()-_=+[]{};:,.?/"),
+        ]
+        for i in range(length - len(picks)):
+            letter = secrets.choice(alphabet)
+            picks.append(letter)
+        secrets.SystemRandom().shuffle(picks)
+        return "".join(picks)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "back":
             self.app.pop_screen()
+            return
+
+        if event.button.id == "generate":
+            raw = self.query_one("#pw_len", Input).value.strip()
+            try:
+                if raw:
+                    length = int(raw)
+                else:
+                    length = 16
+            except ValueError:
+                self.query_one("#status", Static).update("length must be a number")
+                return
+            pw = self.gen_pwd(length)
+            self.query_one("#password", Input).value = pw
+            self.query_one("#status", Static).update(f"generated {len(pw)}-char password")
+            
+            return
+
+        if event.button.id == "copy-store":
+            pw=self.query_one("#password", Input).value
+            if not pw:
+                self.query_one("#status", Static).update("nothing to copy")
+                return
+            try:
+                pyperclip.copy(pw)
+                self.query_one("#status", Static).update("copied password to clipboard")
+            except Exception as e:
+                print(e)
             return
 
         if event.button.id == "save":
@@ -203,7 +258,10 @@ class GetScreen(Screen):
             yield Static("confirm master password to reveal:", id="master_subtitle")
             yield Input(placeholder="master password", password=True, id="confirm")
 
-            yield Button("reveal", id="reveal", classes="buttons")
+            with Horizontal(id="reveal-row"):
+                yield Button("reveal", id="reveal", classes="buttons")
+                yield Button("copy", id="copy-get", classes="buttons")
+
             yield Input(placeholder="password will appear here", password=False, id="password_out")
 
             yield Button("back", id="back", classes="buttons")
@@ -251,6 +309,18 @@ class GetScreen(Screen):
 
         if event.button.id == "refresh":
             self.refresh_services()
+            return
+
+        if event.button.id == "copy-get":
+            pw = self.query_one("#password_out", Input).value 
+            if not pw:
+                self.query_one("#status", Static).update("nothing to copy (reveal first)")
+                return
+            try:
+                pyperclip.copy(pw)
+                self.query_one("#status", Static).update("copied to clipboard")
+            except Exception as e:
+                print(e)
             return
 
         if event.button.id == "reveal":
