@@ -98,6 +98,20 @@ class Vault:
         data.setdefault("entries", {})
         data["entries"][service] = {"password": password}
         self._write(data)
+    
+    def update_entry(self, service: str, password: str):
+        self.add_entry(service, password)
+    
+    def delete_entry(self, service: str) -> bool:
+        service = service.strip().lower()
+        data = self._read()
+        entries = data.get("entries", {})
+        if service not in entries:
+            return False
+        del entries[service]
+        data["entries"] = entries
+        self._write(data)
+        return True
 
     def get_entry(self, service: str) -> Optional[Dict]:
         service = service.strip().lower()

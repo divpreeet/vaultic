@@ -261,6 +261,10 @@ class GetScreen(Screen):
             with Horizontal(id="reveal-row"):
                 yield Button("reveal", id="reveal", classes="buttons")
                 yield Button("copy", id="copy-get", classes="buttons")
+                yield Button("update", id="update", classes="buttons")
+                yield Button("delete", id="delete", classes="buttons")
+            
+                
 
             yield Input(placeholder="password will appear here", password=False, id="password_out")
 
@@ -297,6 +301,9 @@ class GetScreen(Screen):
             self.query_one("#status", Static).update("wrong master password (or vault modified)")
         except Exception as e:
             self.query_one("#status", Static).update(str(e))
+    
+    def on_resume(self):
+        self.refresh_services()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         self.sel_service = getattr(event.item, "service", None)
@@ -349,3 +356,110 @@ class GetScreen(Screen):
                 self.query_one("#status", Static).update("wrong master password")
             except Exception as e:
                 self.query_one("#status", Static).update(f"error: {e}")
+
+        if event.button.id == "delete":
+            if not self.sel_service:
+                self.query_one("#status", Static).update("please select a service to delete")
+
+            master_confirm = self.query_one("#confirm", Input).value
+            if not master_confirm:
+                self.query_one("#status", Static).update("please enter the master password to delete the service")
+
+            try:
+                v = Vault(master_confirm)
+                deleted = v.delete_entry(self.sel_service)
+                deleted_name = self.sel_service
+                if deleted:
+                    self.sel_service = None
+                    self.query_one("#status", Static).update(f"deleted password for {deleted_name}!")
+                    self.query_one("#password_out", Input).value = ""
+                    self.refresh_services()
+                else:
+                    self.query_one("#status", Static).update("service not found")
+            except InvalidTag:
+                self.query_one("#status", Static).update("wrong master password")
+            except Exception as e:
+                print(e)
+
+        if event.button.id == "update":
+            if not self.sel_service:
+                self.query_one("#status", Static).update("select a service first")
+                return
+            self.app.push_screen(UpdateScreen(self.sel_service))
+            return
+
+
+class UpdateScreen(Screen):
+    def __init__(self, service: str):
+        super().__init__()
+        self.service = service
+
+    def compose(self):
+        with Container(id="panel"):
+            yield Static(f"update: {self.service}", id="title")
+
+            yield Static("current password:", id="prev")
+            current = Input(placeholder="(reveal to load)", id="current_pwd", disabled=True)
+            yield current
+
+            yield Static("new password:", id="new")
+            yield Input(placeholder="enter new password", id="new_pwd", password=True)
+           
+            yield Static("confirm master password:", id="master_label")
+            yield Input(placeholder="master password", id="confirm", password=True)
+
+            with Horizontal(id="update-buttons"):
+                yield Button("update", id="update", classes="buttons")
+                yield Button("back", id="back", classes="buttons")
+                yield Button("reveal", id="reveal", classes="buttons")
+            
+            yield Static("", id="status", classes="box")
+
+    def on_mount(self):
+        self.query_one("#current_pwd", Input).value = ""
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "reveal":
+            master_confirm = self.query_one("#confirm", Input).value
+            if not master_confirm:
+                self.query_one("#status", Static).update("enter your master password first")
+                return
+            try:
+                v = Vault(master_confirm)
+                entry = v.get_entry(self.service)
+                if not entry:
+                    self.query_one("#status", Static).update("entry not found")
+                    return
+                self.query_one("#current_pwd", Input).value = entry["password"]
+                self.query_one("#status", Static).update("current password revealed")
+            except InvalidTag:
+                self.query_one("#status", Static).update("wrong master password")
+            except Exception as e:
+                print(e)
+            return
+
+        if event.button.id == "back":
+            self.app.pop_screen()
+            return
+            
+        if event.button.id == "update":
+            new_pw = self.query_one("#new_pwd", Input).value
+            master_confirm = self.query_one("#confirm", Input).value
+
+            if not new_pw:
+                self.query_one("#status", Static).update("enter a new passsword")
+                return
+            if not master_confirm:
+                self.query_one("#status", Static).update("enter your master password")
+                return
+            
+            try:
+                v = Vault(master_confirm)
+                v.update_entry(self.service, new_pw)
+                self.query_one("#status", Static).update(f"updated password for {self.service}")
+
+                self.app.pop_screen()
+            except InvalidTag:
+                self.query_one("#status", Static).update("wrong master password")
+            except Exception as e:
+                print(e)
