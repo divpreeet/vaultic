@@ -6,6 +6,13 @@ build-backend = "hatchling.build"
 name = "vaultic"
 version = "0.1.1"
 description = "Terminal vault using meme steganography"
+authors = [{ name = "divpreeet" }]
+keywords = ["python" ,"textual", "tui", "steganography", "vault"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+]
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
