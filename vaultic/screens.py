@@ -2,10 +2,10 @@ from textual.containers import Container, Vertical, Horizontal
 from textual.widgets import Static, Input, Button, ListView, ListItem
 from textual.screen import Screen
 from cryptography.exceptions import InvalidTag
-from vault import Vault
-from meme import meme as meme_url, download
+from .vault import Vault
+from .meme import meme as meme_url, download
 from pathlib import Path
-from vault import default
+from .vault import default
 from rich_pixels import Pixels
 from PIL import Image
 import secrets 
@@ -38,7 +38,11 @@ class HomeScreen(Screen):
                     yield Static("", id="status", classes="box")
                 
                 with Container(id="meme"):
-                    yield Static("", id="meme-view")
+                    with Vertical(id="meme-vert"):
+                        yield Static("", id="meme-view")
+                        with Horizontal(id="meme-row"):
+                            yield Button("open meme", id="preview", classes="buttons")
+                    
                 
 
     def on_mount(self):
@@ -95,6 +99,12 @@ class HomeScreen(Screen):
         master = self.query_one("#master", Input).value
         if not master:
             self.query_one("#status", Static).update("enter master password!")
+            return
+
+        if event.button.id == "preview":
+            path = default().vault_file.resolve()
+            self.app.open_url(f"file://{path}")
+            self.query_one("#status", Static).update("opened preview")
             return
 
         if event.button.id == "create-vault":
@@ -307,6 +317,7 @@ class GetScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         self.sel_service = getattr(event.item, "service", None)
+        self.query_one("#password_out", Input).value = ""
         self.query_one("#status", Static).update(f"selected: {self.sel_service}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -349,7 +360,10 @@ class GetScreen(Screen):
                     return
 
                 self.query_one("#password_out", Input).value = entry["password"]
-                self.query_one("#status", Static).update("revealed")
+                self.query_one("#status", Static).update("revealed (will hide after 15 seconds)")
+                self.set_timer(15, lambda: setattr(self.query_one("#password_out", Input), "value", ""))
+                return
+
             except FileNotFoundError:
                 self.query_one("#status", Static).update("create vault meme first")
             except InvalidTag:

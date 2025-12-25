@@ -1,6 +1,6 @@
 from textual.app import App
 from textual.widgets import Header, Footer
-from screens import HomeScreen
+from .screens import HomeScreen
 
 class Vaultic(App):
     CSS_PATH = "styles.tcss"
@@ -11,5 +11,8 @@ class Vaultic(App):
     def on_mount(self) -> None:
         self.push_screen(HomeScreen())
 
-if __name__ == "__main__":
+def main():
     Vaultic().run()
+
+if __name__ == "__main__":
+    main()

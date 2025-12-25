@@ -33,6 +33,7 @@ Footer {
     width: 52;
     height: 100%;
     padding: 0;
+    align: center top;
 }
 
 #meme-title {
@@ -42,8 +43,9 @@ Footer {
 
 #meme-view {
     height: 1fr;
-    width: 100%;
-    content-align: center middle;
+    width: 1fr;
+    max-height: 28;
+    content-align: center top;
 }
 
 #topbar {
@@ -87,4 +89,23 @@ Footer {
 #copy-store, #copy-get{
     width: 10;
     margin-left: 1;
+}
+
+#meme-vert {
+    height: 100%;
+    width: 1fr;
+    align: center top;
+}
+
+#meme-row{
+    width: 1fr;
+    height:3;
+    align: center middle;
+    margin-top: 0;
+}
+
+#preview{
+    width: auto;
+    height: 3;
+    padding: 0 1;
 }

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vaultic"
+version = "0.1.1"
+description = "Terminal vault using meme steganography"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "textual",
+  "cryptography",
+  "pillow",
+  "rich-pixels",
+  "pyperclip",
+  "requests",
+]
+
+[project.scripts]
+vaultic = "vaultic.app:main"
+
+[tool.hatch.build]
+include = [
+  "vaultic/**/*.py",
+  "vaultic/**/*.tcss",
+  "README.md",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["vaultic"]

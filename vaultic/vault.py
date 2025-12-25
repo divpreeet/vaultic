@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from stego import extract, embed
+from .stego import extract, embed
 
 @dataclass
 class VaultPaths:
